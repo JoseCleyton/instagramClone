@@ -44,5 +44,54 @@ export class BdService{
         )*/
         }
 
+        public consultaPublicacoes(email : string): Promise<any>{
+            let publicacoes : any = []
+            return new Promise((resolve, reject)=>{
+                // consultando todas os dados das publicacoes de acordo com o email do usuario
+                firebase.database().ref(`publicacoes/${btoa(email)}`)
+                //Ordenando pela key
+                 .orderByKey()
+                    // retorna um listens dos valores e tira um snapshot
+                    .once('value')
+                        .then((snapshot:any)=>{
+                           
+                            snapshot.forEach((childSnapshot:any)=>{
+
+                                let publicacao = childSnapshot.val()
+                                publicacao.key = childSnapshot.key
+
+                                publicacoes.push(publicacao)
+                                
+                            })
+                        return publicacoes.reverse()                      
+                    })  
+                    .then((publicacoes:any)=>{
+                        // consultar a url da imagem (storage)
+                        publicacoes.forEach((publicacao)=>{
+                            firebase.storage().ref()
+                                .child(`imagens/${publicacao.key}`)
+                                    .getDownloadURL()
+                                        .then((url:string)=>{   
+        
+                                            publicacao.url_imagem = url                                            
+                                            
+                                            // consultar o nome do usuario
+                                            firebase.database().ref(`usuario_detalhe/${btoa(email)}`)
+                                            .once('value')
+                                            .then((snapshot:any)=>{
+                                                    publicacao.nome_usuario = snapshot.val().usuario.usuario 
+                                                
+                                                    
+                                            })
+                                        })
+                        })
+                        resolve(publicacoes)
+                    })  
+                    
+                    
+            })
+            
+        }
+
 
 }
